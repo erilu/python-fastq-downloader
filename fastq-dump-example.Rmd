@@ -1,0 +1,21 @@
+---
+title: "Tutorial for downloading FASTQ files using the SRA toolkit and fastq-dump"
+author: Erick Lu
+output: 
+  html_document:
+    toc: true
+---
+
+# Introduction
+
+# SRA Toolkit
+
+# Finding raw sequencing data from GEO
+
+# Downloading FASTQ files using SRA toolkit
+
+# fastq-dump alone or prefetch + fastq dump, which is better?
+
+# Concatenating SRR runs
+
+# Conclusion
