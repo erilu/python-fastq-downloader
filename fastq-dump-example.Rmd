@@ -8,9 +8,21 @@ output:
 
 # Introduction
 
-# SRA Toolkit
+Most scientific journals require scientists to make their sequencing data publicly available. You can often find raw RNA-sequencing data deposited in the Gene Expression Omnibus (GEO). This way, other researchers in the world who might find the dataset useful can download the raw data, and re-analyze it for their own purposes.
+
+The data is housed in GEO, but how do we access it? Raw sequencing files, even when in their compressed form (usually .fastq.gz), are huge files often multiple gigabytes in size per sample. Some labs may provide the processed data in tabular form, in which the relative per gene expression has already been quantified per sample, but not all labs are nice enough to do so. If you are a researcher with little bioinformatics experience, the downloading process can be somewhat complicated. This is a step by step guide for those who need to start from scratch and download the raw FASTQ files.
 
 # Finding raw sequencing data from GEO
+
+Often times, you will be reading a paper in a journal and there will be a pretty figure depicting some data from an RNA-sequencing experiment. You decide that you want to sift through that data for your own genes of interest, but how do you find out where it is? The first step is finding the GEO accession number corresponding to the dataset that you want to download. To find it, you can navigate to the methods section and searching (Ctrl-F) for "GSE". A identifier such as GSEXXXXX, where X represents a number should show up, typically in a statement such as "The data have been deposited in GEO under accession number GSEXXXXX". If that doesn't work, try to Ctrl-F for "GEO". Once we have the accession number, we can now search GEO to find the dataset.
+
+As an example, I had to deposit raw RNA-sequencing data in graduate school, which can be found at accession number GSE71165 (https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE71165). Following the link, you can see all the details associated with the study.
+
+In the samples section, each of the samples in the study will be listed along with a GSM sample identifier. Clicking on the sample will take you to another page with an SRA identifier.
+
+
+# SRA Toolkit
+
 
 # Downloading FASTQ files using SRA toolkit
 
