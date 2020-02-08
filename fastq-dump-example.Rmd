@@ -1,38 +1,57 @@
 ---
-title: "Tutorial for downloading FASTQ files using the SRA toolkit and fastq-dump"
+title: "Batch downloading FASTQ files using the SRA toolkit, fastq-dump, and Python"
 author: Erick Lu
+date: February 7, 2020
 output: 
   html_document:
     toc: true
 ---
+```{r include=F}
+library(knitr)
+opts_chunk$set( out.width = "80%", fig.align="center")
+```
 
-# Introduction
+## Introduction
 
 Most scientific journals require scientists to make their sequencing data publicly available. This way, other researchers in the world who find the dataset useful can download the raw data and re-analyze it for their own purposes. Raw RNA-sequencing data is usually deposited in the Gene Expression Omnibus (GEO), at https://www.ncbi.nlm.nih.gov/geo/.
 
-The data is housed in GEO, but how do we access it? Raw sequencing files, even when in their compressed form (usually .fastq.gz), are huge files often multiple gigabytes in size per sample. Some labs may provide the processed data in tabular form, in which the relative per gene expression has already been quantified per sample, but not all labs are nice enough to do so. If you are a researcher with little bioinformatics experience, the downloading process can be somewhat complicated. This is a step-by-step guide for researchers who need to start from scratch and download raw FASTQ files from GEO.
+How do we access the data? Raw sequencing files, even when in their compressed form (usually as .fastq.gz files), are huge files that are often multiple gigabytes in size per sample. If you are a researcher with little bioinformatics experience, the downloading process can be somewhat complicated. This guide explains how to:
 
-# Finding raw sequencing data in GEO
+1. Navigate through GEO to find sequencing data.
+2. Download raw FASTQ files using the NCBI SRA toolkit.
+3. Use a Python script to batch download files with prefetch and fastq-dump.
 
-Let's say you are reading a paper in a journal and there is a pretty figure depicting some data from an RNA-sequencing experiment. You decide that you want to sift through that data for your own genes of interest. The first step is finding the GEO accession number corresponding to the dataset. To find it, you should navigate to the methods section and search (Ctrl-F) for "GSE". A identifier such as GSEXXXXX, where X represents a number should show up, typically in a statement such as "The data have been deposited in GEO under accession number GSEXXXXX". If that doesn't work, try to Ctrl-F for "GEO". Once we have the accession number, we can now search GEO to find the dataset.
+## Finding raw sequencing data in GEO
 
-As an example, let's work with an RNA-sequencing study that I analyzed for Li et al. Nature 2019, which can be found in GEO under accession number GSE71165 (https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE71165). The purpose of this analysis was to explore the genes that splenic dendritic cells upregulated upon stimulation with sheep red blood cells (SRBCs). Following the link, you can see all the details associated with the study.
+Let's say you are reading a paper in a journal and see an interesting RNA-seq experiment. You decide that you want to sift through the data for your own genes of interest. The first step is finding the GEO accession number corresponding to the dataset. To find it, you should navigate to the methods section and search (Ctrl-F) for "GSE". A identifier such as GSE<small>XXXXX</small>, where <small>X</small> represents a number, usually shows up in a statement such as: "the data have been deposited in GEO under accession number GSE<small>XXXXX</small>". If that doesn't work, try to Ctrl-F for "GEO". Once we have the accession number, we can now search GEO to find the dataset.
 
-In the _Samples_ section, each of the samples in the study will be listed along with a GSM sample identifier:
+As an example, let's work with an RNA-seq study that I analyzed for [Li et al. Nature 2019](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4883664/), which can be found in GEO under accession number GSE71165 (https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE71165). The purpose of this analysis was to explore the genes that splenic dendritic cells upregulated upon stimulation. Following the link, we can see all the details associated with the study. If we scroll to the bottom of the page, we should see a list of samples as well as a link to the **SRA Run Selector**, which I've pointed out in the following image:
 
-Image
+```{r echo = F}
+include_graphics("images/GSE71165_bottom_of_page.png")
+```
 
-Clicking on the GSM identifier will take you to another page. Scrolling down to the _Relations_ section will show you the sample's SRA identifier, beginning with "SRX":
+If we click on the **SRA Run Selector** link, we will see a table of identifers for each of the samples. What we are looking for are the SRA Run IDs, which start with the prefix "SRR". I've pointed out where to find them in the image below:
 
-Image
+```{r echo = F, out.width = "100%"}
+include_graphics("images/SRA_run_selector_GSE71165.png")
+```
 
-Clicking on the SRA number (for example, SRX1114423 for HET_CD4_1) will bring you to yet another webpage that provides information about the sample, as well as each of the SRA runs for that sample (SRR2121685 for HET_CD4_1):
+The SRA runs (e.g. SRR2121685) correspond to the actual sequencing files that we want to download in order to access the raw data for each sample. Sometimes, there will be multiple SRA runs for each sample, and they will be displayed as multiple rows in the table above, sharing a common GSM and SRX number. Usually this means that the lab had deposited multiple FASTQ files for one sample and did not bother to concatenate them together prior to deposition.
 
-Image
+Instead of clicking on the SRA Run Selector, you can get more details about how each sample was prepared clicking on the GSM identifier in the **Samples** section from the first image (e.g., GSM1828772). This will take you to the sample description [page](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSM1828772). Scrolling down to the **Relations** section will show you the sample's SRA identifier, beginning with "SRX":
 
-The SRR runs corresopnd to the actual sequencing files that we want to download in order to access the raw data. Sometimes, there will be multiple SRR runs for each sample. Usually this means that the lab had deposited multiple FASTQ files for one sample and did not bother to concatenate them together prior to deposition.
+```{r echo = F}
+include_graphics("images/GSM1828771_bottom_of_page.png")
+```
 
-I have summarized the different identifiers for GSE71165 in the following table:
+Clicking on the SRA number (for example, SRX1114423 for HET_CD4_1) will bring you to yet another [page](https://www.ncbi.nlm.nih.gov/sra?term=SRX1114423) that provides information about the SRA runs for that sample (e.g. SRR2121685 for HET_CD4_1):
+
+```{r echo = F}
+include_graphics("images/SRX1114423_whole_page.png")
+```
+
+Although it's more work, I prefer clicking through these pages for each individual sample because they provide important information such as how the libraries were prepared. I have summarized the different identifiers for GSE71165 in the following table:
 
 Sample Name | GSM Identifier | SRA Identifier (SRX) | SRA Runs (SRR, download these)
 ----------- | ----------- | ----------- | ----------------------
@@ -41,21 +60,15 @@ HET_CD4_2 | GSM1828773 | SRX1114424 | SRR2121686
 IMM_CD4_1 | GSM1828774 | SRX1114425 | SRR2121687
 IMM_CD4_2 | GSM1828775 | SRX1114426 | SRR2121688
 
-Another way to get these identifiers is by clicking the SRA Run Selector link on the original page:
-
-Image
-
-I prefer clicking through each individual sample because the pages above provide important information such as how the libraries were prepared.
-
 To eventually get the raw data in FASTQ format, we first need to first download the SRA Run files associated with each sample (for example, SRR2121685 for HET_CD4_1). Downloading SRR2121685 will result in a file called SRR2121685.sra. But what is an .sra file and what does it do? An SRA file can be used by the SRA toolkit as a set of "instructions" to construct the the fastq file. The next section explains the SRA toolkit and shows you how to download and convert SRA files into FASTQ files.
 
-## Downloading FASTQ files using SRA toolkit
+## Downloading FASTQ files using the SRA toolkit
 
 In order to download the SRA files onto your machine, we use the NCBI's SRA toolkit, which lets us use the command line to download a specified SRA accession ID. If you are using a Linux platform, you can type: `sudo apt install sra-toolkit` in your command line to install the toolkit. You can read more about SRA toolkit here: https://www.ncbi.nlm.nih.gov/books/NBK242621/ and at their github repo: https://github.com/ncbi/sra-tools.
 
 The toolkit works by first using the `prefetch` command to download the SRA file associated with the specified SRA ID.
 
-For example, to download the SRA file for HET_CD4_1, the command would be: 
+For example, to download the SRA file for HET_CD4_1 (SRA Run identifier: SRR2121685), the command would be: 
 
 ```bash
 prefetch SRR2121685 
@@ -98,9 +111,9 @@ ls fastq
 SRR2121685_pass_1.fastq.gz  SRR2121685_pass_2.fastq.gz
 ```
 
-We observe that two fastq files have been extracted from SRR2121685.sra. This is because the original fastq file was produced from paired-end sequencing. `fastq-dump` has extracted the SRA file into two files, with suffix "_1" for paired-end read 1 and "_2" for  paired-end read 2.
+We observe that two fastq files have been extracted from SRR2121685.sra. This is because the original fastq file was produced from paired-end sequencing. `fastq-dump` has extracted the SRA file into two files, with suffix "_1" for paired-end read 1 and "_2" for  paired-end read 2. I typically use the settings provided above for `fastq-dump` as my default settings.
 
-## Chaining downloads using Python
+## Automating downloads using Python
 
 Since there are lots of SRA files associated with our samples, it would take a long time to manually run `prefetch` and `fastq-dump` for all the files. To automate all the downloads, I wrote a small script in python to call `fastq-dump` on each of the SRA IDs we want. The code is shown below as well as provided in this repo as `sra_download.py`:
 
@@ -137,7 +150,7 @@ SRR2121685_pass_1.fastq.gz	SRR2121686_pass_1.fastq.gz	SRR2121687_pass_1.fastq.gz
 SRR2121685_pass_2.fastq.gz	SRR2121686_pass_2.fastq.gz	SRR2121687_pass_2.fastq.gz	SRR2121688_pass_2.fastq.gz
 ```
 
-# Running fastq-dump without prefetch
+## Running fastq-dump without prefetch is slow
 
 If you don't pre-download the SRA files and just run the `fastq-dump` command, the .fastq file will still be generated. The SRA toolkit manual at https://www.ncbi.nlm.nih.gov/books/NBK242621/ says that this is a valid option. I would advise against it, since I have found this method to be much slower than first running `prefetch` and then `fastq-dump` on the pre-downloaded SRA files. Here's some proof, in which I time the processes below:
 
@@ -186,9 +199,9 @@ sys     0m12.551s
 
 Downloading the SRA file took 3 min 15 seconds, and running `fastq-dump` on the pre-downloaded SRA file of size 3210181560 bytes took 22 min 21 seconds, making the `prefetch` + `fastq-dump` option take a total of 25 min 36 seconds. In comparison, running `fastq-dump` without pre-downloading the files for the same SRA ID took a total time of 77 minutes 34 seconds!
 
-# Conclusion
+## Conclusion
 
-We are done downloading the FASTQ files! Now, we can start mapping the reads to a reference genome and perform downstream bulk RNA-sequencing analysis. For this dataset, I analyzed the data to find upregulated genes in the IMM_CD4_1 and IMM_CD4_2 samples compared to the HET_CD4_1 and HET_CD4_2 samples. You can find my analysis in this repo: . I hope that this short tutorial has helped you learn how to use the SRA tools to download raw sequencing data. Thanks for reading!
+We are done downloading the FASTQ files! Now, we can start mapping the reads to a reference genome and perform downstream bulk RNA-sequencing analysis. If you want to see more, I analyze this data to find upregulated genes in the IMM_CD4_1 and IMM_CD4_2 samples compared to the HET_CD4_1 and HET_CD4_2 samples in this repo: https://github.com/erilu/dendritic-cell-bulk-rnaseq. I hope that this short tutorial has helped you learn how to use the SRA tools to download raw sequencing data. Thanks for reading!
 
 
 
