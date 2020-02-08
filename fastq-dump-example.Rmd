@@ -16,7 +16,7 @@ The data is housed in GEO, but how do we access it? Raw sequencing files, even w
 
 Let's say you are reading a paper in a journal and there is a pretty figure depicting some data from an RNA-sequencing experiment. You decide that you want to sift through that data for your own genes of interest. The first step is finding the GEO accession number corresponding to the dataset. To find it, you should navigate to the methods section and search (Ctrl-F) for "GSE". A identifier such as GSEXXXXX, where X represents a number should show up, typically in a statement such as "The data have been deposited in GEO under accession number GSEXXXXX". If that doesn't work, try to Ctrl-F for "GEO". Once we have the accession number, we can now search GEO to find the dataset.
 
-As an example, let's work with an RNA-sequencing study that I analyzed for Li et al. Nature 2019, which can be found in GEO under accession number GSE71165 (https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE71165). Following the link, you can see all the details associated with the study.
+As an example, let's work with an RNA-sequencing study that I analyzed for Li et al. Nature 2019, which can be found in GEO under accession number GSE71165 (https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE71165). The purpose of this analysis was to explore the genes that splenic dendritic cells upregulated upon stimulation with sheep red blood cells (SRBCs). Following the link, you can see all the details associated with the study.
 
 In the _Samples_ section, each of the samples in the study will be listed along with a GSM sample identifier:
 
@@ -83,6 +83,7 @@ fastq-dump --outdir fastq --gzip --skip-technical  --readids --read-filter pass 
 ```
 
 If successful, you should see the following show up in your terminal:
+
 ```{}
 Read 27928438 spots for /home/ericklu/ncbi/public/sra/SRR2121685.sra
 Written 27928438 spots for /home/ericklu/ncbi/public/sra/SRR2121685.sra
@@ -99,6 +100,95 @@ SRR2121685_pass_1.fastq.gz  SRR2121685_pass_2.fastq.gz
 
 We observe that two fastq files have been extracted from SRR2121685.sra. This is because the original fastq file was produced from paired-end sequencing. `fastq-dump` has extracted the SRA file into two files, with suffix "_1" for paired-end read 1 and "_2" for  paired-end read 2.
 
+## Chaining downloads using Python
+
+Since there are lots of SRA files associated with our samples, it would take a long time to manually run `prefetch` and `fastq-dump` for all the files. To automate all the downloads, I wrote a small script in python to call `fastq-dump` on each of the SRA IDs we want. The code is shown below as well as provided in this repo as `sra_download.py`:
+
+```py
+import subprocess
+
+# Het1, Het2, Imm1, Imm2
+sra_numbers = [
+    "SRR2121685", "SRR2121686", "SRR2121687", "SRR2121688"
+    ]
+
+# this will download the .sra files to ~/ncbi/public/sra/ (will create directory if not present)
+for sra_id in sra_numbers:
+    print ("Currently downloading: " + sra_id)
+    prefetch = "prefetch " + sra_id
+    print ("The command used was: " + prefetch)
+    subprocess.call(prefetch, shell=True)
+
+# this will extract the .sra files from above into a folder named 'fastq'
+for sra_id in sra_numbers:
+    print ("Generating fastq for: " + sra_id)
+    fastq_dump = "fastq-dump --outdir fastq --gzip --skip-technical  --readids --read-filter pass --dumpbase --split-3 --clip ~/ncbi/public/sra/" + sra_id + ".sra"
+    print ("The command used was: " + fastq_dump)
+    subprocess.call(fastq_dump, shell=True)
+```
+
+We can run the python script by simply navigating to the folder on your machine where you want to store the fastq files (via the command line), then running `python sra_download.py`. After running the python script, our .fastq files should all be sitting in a directory called 'fastq'.
+
+```bash
+ls fastq
+```
+```{}
+SRR2121685_pass_1.fastq.gz	SRR2121686_pass_1.fastq.gz	SRR2121687_pass_1.fastq.gz	SRR2121688_pass_1.fastq.gz
+SRR2121685_pass_2.fastq.gz	SRR2121686_pass_2.fastq.gz	SRR2121687_pass_2.fastq.gz	SRR2121688_pass_2.fastq.gz
+```
+
+# Running fastq-dump without prefetch
+
+If you don't pre-download the SRA files and just run the `fastq-dump` command, the .fastq file will still be generated. The SRA toolkit manual at https://www.ncbi.nlm.nih.gov/books/NBK242621/ says that this is a valid option. I would advise against it, since I have found this method to be much slower than first running `prefetch` and then `fastq-dump` on the pre-downloaded SRA files. Here's some proof, in which I time the processes below:
+
+* Time it takes to download SRR2121685 using `prefetch`:
+
+```bash
+time prefetch SRR2121685
+```
+```{}
+2020-02-07T02:39:54 prefetch.2.8.2: 1) Downloading 'SRR2121685'...
+2020-02-07T02:39:54 prefetch.2.8.2:  Downloading via https...
+2020-02-07T02:43:07 prefetch.2.8.2: 1) 'SRR2121685' was downloaded successfully
+
+real    3m15.028s
+user    0m51.353s
+sys     0m12.287s
+```
+
+* Time it takes to `fastq-dump` from the pre-downloaded SRR2121685 file:
+
+```bash
+time fastq-dump --outdir fastq --gzip --skip-technical  --readids --read-filter pass --dumpbase --split-3 --clip ~/ncbi/public/sra/SRR2121685.sra
+```
+```{}
+Read 27928438 spots for /home/ericklu/ncbi/public/sra/SRR2121685.sra
+Written 27928438 spots for /home/ericklu/ncbi/public/sra/SRR2121685.sra
+
+real    22m21.284s
+user    22m11.772s
+sys     0m4.078s
+```
+
+* Time it takes to `fastq-dump` without pre-downloading SRR2121685:
+
+```bash
+time fastq-dump --outdir fastq --gzip --skip-technical  --readids --read-filter pass --dumpbase --split-3 --clip SRR2121685
+```
+```{}
+Read 27928438 spots for SRR2121685
+Written 27928438 spots for SRR2121685
+
+real    77m34.548s
+user    25m37.226s
+sys     0m12.551s
+```
+
+Downloading the SRA file took 3 min 15 seconds, and running `fastq-dump` on the pre-downloaded SRA file of size 3210181560 bytes took 22 min 21 seconds, making the `prefetch` + `fastq-dump` option take a total of 25 min 36 seconds. In comparison, running `fastq-dump` without pre-downloading the files for the same SRA ID took a total time of 77 minutes 34 seconds!
+
+# Conclusion
+
+We are done downloading the FASTQ files! Now, we can start mapping the reads to a reference genome and perform downstream bulk RNA-sequencing analysis. For this dataset, I analyzed the data to find upregulated genes in the IMM_CD4_1 and IMM_CD4_2 samples compared to the HET_CD4_1 and HET_CD4_2 samples. You can find my analysis in this repo: . I hope that this short tutorial has helped you learn how to use the SRA tools to download raw sequencing data. Thanks for reading!
 
 
 
