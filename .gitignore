@@ -1,7 +1,7 @@
 *.nb.html
-*.html
 /test_output
 /data
 .Rhistory
 .DS_Store
 .Rproj.user
+*.Rproj

@@ -1,10 +1,11 @@
 ---
 title: "Batch downloading FASTQ files using the SRA toolkit, fastq-dump, and Python"
 author: Erick Lu
-date: February 7, 2020
+date: February 10, 2020
 output: 
   html_document:
     toc: true
+    toc_float: true
 ---
 ```{r include=F}
 library(knitr)
@@ -115,7 +116,7 @@ We observe that two fastq files have been extracted from SRR2121685.sra. This is
 
 ## Automating downloads using Python
 
-Since there are lots of SRA files associated with our samples, it would take a long time to manually run `prefetch` and `fastq-dump` for all the files. To automate this process, I wrote a small script in python to first download each SRA file using `prefetch` and then run `fastq-dump`. The code is shown below and also provided in this repo as `sra_download.py`:
+Since there are lots of SRA files associated with our samples, it would take a long time to manually run `prefetch` and `fastq-dump` for all the files. To automate this process, I wrote a small script in python to first download each SRA file using `prefetch` and then run `fastq-dump`. The code is shown below and also provided in this repo as `fastq_download.py`:
 
 ```py
 import subprocess
@@ -140,7 +141,7 @@ for sra_id in sra_numbers:
     subprocess.call(fastq_dump, shell=True)
 ```
 
-We can run the python script by simply navigating to the folder on your machine where you want to store the FASTQ files (via the command line), then running `python sra_download.py`. After running the python script, our FASTQ files should all be sitting in a directory called 'fastq'.
+We can run the python script by simply navigating to the folder on your machine where you want to store the FASTQ files (via the command line), then running `python fastq_download.py`. After running the python script, our FASTQ files should all be sitting in a directory called 'fastq'.
 
 ```bash
 ls fastq
