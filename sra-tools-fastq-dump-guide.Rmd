@@ -1,7 +1,7 @@
 ---
 title: "Batch downloading FASTQ files using the SRA toolkit, fastq-dump, and Python"
 author: Erick Lu
-date: February 10, 2020
+date: "February 10, 2020  \n\n[GitHub Repo](https://github.com/erilu/python-fastq-downloader)"
 output: 
   html_document:
     toc: true
@@ -19,7 +19,7 @@ How do we access the data? Raw sequencing data comes in huge files that are ofte
 
 1. Navigate through GEO to find raw sequencing data.
 2. Download and convert SRA files to FASTQ files using the NCBI's SRA toolkit.
-3. Use a Python script to batch download files with the SRA prefetch and fastq-dump tools.
+3. Use a Python script to batch download files with the SRA `prefetch` and `fastq-dump` tools.
 
 ## Finding raw sequencing data in GEO
 

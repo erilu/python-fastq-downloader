@@ -20,7 +20,7 @@ How do we access the data? Raw sequencing data comes in huge files that are ofte
 
 1.  Navigate through GEO to find raw sequencing data.
 2.  Download and convert SRA files to FASTQ files using the NCBI's SRA toolkit.
-3.  Use a Python script to batch download files with the SRA prefetch and fastq-dump tools.
+3.  Use a Python script to batch download files with the SRA `prefetch` and `fastq-dump` tools.
 
 Finding raw sequencing data in GEO
 ----------------------------------
@@ -102,7 +102,7 @@ The toolkit works by first using the `prefetch` command to download the SRA file
 For example, to download the SRA file for HET\_CD4\_1 (SRA Run identifier: SRR2121685), the command would be:
 
 ``` bash
-prefetch SRR2121685 
+prefetch SRR2121685
 ```
 
 You should observe the following output from running the command:
