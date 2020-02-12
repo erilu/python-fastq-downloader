@@ -1,6 +1,7 @@
 Batch downloading FASTQ files using the SRA toolkit, fastq-dump, and Python
 ================
 Erick Lu
+
 February 10, 2020
 
 -   [Introduction](#introduction)
