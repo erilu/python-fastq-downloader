@@ -30,7 +30,7 @@ for sample_id in samples:
 
     # compressing the fastqs
     for fq_name in glob('{:s}/{:s}*.fastq'.format(work_dir, samples[sample_id])):
-        cmd_compress = 'gzip -c {:s} > {:s}/{:s}_{:s}.gz'.format(fq_name, work_dir, sample_id, fq_name)
+        cmd_compress = 'gzip -c {:s} > {:s}/{:s}_{:s}.gz'.format(fq_name, work_dir, sample_id, os.path.basename(fq_name))
         print('\trunning: ' + cmd_compress)
         subprocess.call(cmd_compress, shell=True)
         os.remove(fq_name)
