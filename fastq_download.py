@@ -36,7 +36,7 @@ for sample_id in samples:
         os.remove(fq_name)
 
     # clean up
-    cmd_rmdir = '{:s}/{:s}/'.format(work_dir, samples[sample_id])
-    print('\tremoving: ' + cmd_rmdir)
-    os.rmdir(cmd_rmdir)
+    cmd_rmdir = 'rm -r {:s}/{:s}'.format(work_dir, samples[sample_id])
+    print('\trunning: ' + cmd_rmdir)
+    subprocess.call(cmd_rmdir, shell=True)
 
